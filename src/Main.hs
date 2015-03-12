@@ -1,57 +1,58 @@
-{-# LANGUAGE FlexibleInstances,MultiParamTypeClasses,DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
+import Data.Map as Map
 import Text.Printf (printf)
 
-import Control.Monad
 
-import System.Console.CmdLib -- (Attributes,Group,Help,ArgHelp,Default,RecordCommand)
+import Control.Monad (mplus)
+
+import System.Console.CmdLib 
 
 import qualified NS3473Column.System as S
+import qualified NS3473.Concrete as M
 
 data Main = Main { 
-        s :: String,
+        nf :: String,
         m :: String,
-        b :: String, 
-        bt :: String, 
-        h :: String, 
-        ht :: String, 
-        c :: String, 
-        d :: String, 
-        o :: String,
-        hlaydist :: String, 
-        vlaydist :: String, 
-        numlayers :: String, 
-        linkdiam :: String 
+        h1 :: Int,
+        h2 :: Int,
+        cln :: Int,
+        lkf :: String,
+        d :: Int,
+        n :: Int
     }
     deriving (Typeable, Data, Eq)
 
 instance Attributes Main where
     attributes _ = group "Options" [
-            s      %> [ Group "Krefter", Help "Dimensjonerende skjaerkraft (kN)", ArgHelp "VAL", Default "0.0" ], 
-            m      %> [ Group "Krefter", Help "Dimensjonerende moment (kNm)", ArgHelp "VAL", Default "0.0" ],
-            b      %> [ Group "Geometri, paakrevet", Help "Bjelkebredde (mm)", ArgHelp "VAL" ], 
-            bt      %> [ Group "Geometri, tillegg", Help "Bjelkebredde flens (mm)", ArgHelp "VAL", Default "0.0" ], 
-            h      %> [ Group "Geometri, paakrevet", Help "Bjelkehoyde (mm)", ArgHelp "VAL" ], 
-            ht      %> [ Group "Geometri, tillegg", Help "Bjelkehoyde flens, platetykkelse (mm)", ArgHelp "VAL", Default "0.0" ], 
-            c      %> [ Group "Materialegenskaper", Help "Betongkvalitet", ArgHelp "VAL", Default "35" ], 
-            d      %> [ Group "Armering", Help "Armeringsdiameter (mm)", ArgHelp "VAL", Default "12.0" ], 
-            o      %> [ Group "Armering", Help "Overdekning (mm)", ArgHelp "VAL", Default "25" ],
-            hlaydist      %> [ Group "Armering", Help "Horisontal distanse mellom armeringslag (mm)", ArgHelp "VAL", Default "25" ], 
-            vlaydist      %> [ Group "Armering", Help "Vertikal distanse mellom armeringslag (mm)", ArgHelp "VAL", Default "40" ], 
-            numlayers      %> [ Group "Armering", Help "Antall armeringslag", ArgHelp "VAL", Default "1" ], 
-            linkdiam      %> [ Group "Armering", Help "Boylediameter (mm)", ArgHelp "VAL", Default "8" ] 
+            nf     %> [ Group "Forces", Help "Normal force (kN)", ArgHelp "VAL", Default "0.0" ], 
+            m      %> [ Group "Forces", Help "Moment (kNm)", ArgHelp "VAL", Default "0.0" ], 
+            h1     %> [ Group "Geometry", Help "Shortest column side (mm)", ArgHelp "VAL", Required False], 
+            h2     %> [ Group "Geometry", Help "Longest column side (mm)", ArgHelp "VAL", Required False],
+            cln    %> [ Group "Geometry", Help "Column lenght (mm)", ArgHelp "VAL", Required False],
+            lkf    %> [ Group "Geometry", Help "Effective length faktor (mm) (default: 1.0)", ArgHelp "VAL", Default "1.0" ],
+            d      %> [ Group "Rebars", Help "Rebar diameter (mm) (default: 12)", ArgHelp "VAL", Required False, Default (12 :: Int) ],
+            n      %> [ Group "Rebars", Help "Amount of rebars one side of column (default: 2)", ArgHelp "VAL", Required False, Default (2 :: Int) ]
         ]
 
 instance RecordCommand Main where
-    mode_summary _ = "NS 3473 Beams"
+    mode_summary _ = "NS 3473 Columns"
+
+showOpt :: Main -> String
+showOpt main = "yep"
+
+nothingIfZero :: String -> Maybe Double
+nothingIfZero s | s == "0.0" = Nothing
+                | otherwise = Just (read s :: Double)
 
 main :: IO ()
 main = getArgs >>= executeR Main {} >>= \opts -> do
-    let curS = (read (s opts) :: Double) 
-    let curM = (read (m opts) :: Double) 
-    let curB = (read (b opts) :: Double) 
-    let curH = (read (h opts) :: Double) 
-    let curD = (read (d opts) :: Double) 
-    S.runSystem $ S.BeamSystem curB curH curS curM
+    let rebar = S.createRebarCollection (d opts) (n opts) 
+    let column = S.createColumn (h1 opts) (h2 opts) (cln opts) (lkf opts) (M.newConc "35") rebar 
+    let moment = nothingIfZero (m opts)
+    let normForce = nothingIfZero (nf opts)
+    S.runSystem column moment normForce 
     return ()
 
