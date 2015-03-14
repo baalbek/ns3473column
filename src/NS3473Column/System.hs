@@ -14,10 +14,9 @@ import Data.Monoid ((<>))
 import qualified NS3473.Concrete as M
 import qualified NS3473.Rebars as R
 import qualified NS3473.Columns as C
-import qualified NS3473.Buckling as X
 
 createRebarCollection :: Int     -- ^ Rebar diam
-                         -> Int  -- ^ Rebar amount on one side
+                         -> Int  -- ^ Rebar amount along h2
                          -> R.RebarCollection 
 createRebarCollection rdiam rmnt = R.ColumnRebars rebar (fromIntegral rmnt) 25
     where rebar = R.Rebar (fromIntegral rdiam)
@@ -29,22 +28,5 @@ createColumn :: Int      -- ^ Shortest column side [mm]
                 -> M.Concrete 
                 -> R.RebarCollection   
                 -> C.Column
-createColumn h1 h2 cln lkf conc reb = C.Column h1' h2' cln' lkf' conc reb
-    where h1' = fromIntegral h1
-          h2' = fromIntegral h1
-          cln' = fromIntegral cln
-          lkf' = read lkf :: Double
-
-
-
-check :: C.Column -> Writer String Bool
-check = undefined 
-
-runSystem :: C.Column 
-             -> Maybe Double -- ^ Moment [kNm]
-             -> Maybe Double -- ^ Normal force [kN]
-             -> IO ()
-runSystem column m nf = 
-    printf "System %s - %s - %s\n" (show column) (show m) (show nf) >>
-    return ()
-
+createColumn h1 h2 cln lkf conc rebar = 
+    C.Column (fromIntegral h1) (fromIntegral h2) (fromIntegral cln) (read lkf :: Double) conc rebar
