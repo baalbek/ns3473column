@@ -53,6 +53,6 @@ main = getArgs >>= executeR Main {} >>= \opts -> do
     let column = S.createColumn (h1 opts) (h2 opts) (cln opts) (lkf opts) (M.newConc "35") rebar 
     let moment = nothingIfZero (m opts)
     let normForce = nothingIfZero (nf opts)
-    S.runSystem column moment normForce 
+    S.runSystem column normForce moment 
     return ()
 
