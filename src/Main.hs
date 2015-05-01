@@ -61,7 +61,7 @@ main :: IO ()
 main = getArgs >>= executeR Main {} >>= \opts -> 
         let rebar = S.createRebarCollection (d opts) (n opts) 
             column = S.createColumn (h1 opts) (h2 opts) (cln opts) (lkf opts) (M.newConc "35") rebar in
-        if (x opts) == True 
-            then calcAs column (wt opts)
-            else S.runSystem column (asDouble (m opts)) (asDouble (nf opts)) >>
-        return ()
+        case (x opts) of 
+            True -> calcAs column (wt opts) >> return ()
+            False -> S.runSystem column (asDouble (m opts)) (asDouble (nf opts)) >> return ()
+        >> return ()
