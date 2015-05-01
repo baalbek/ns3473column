@@ -9,9 +9,11 @@ import qualified NS3473Column.System as S
 rebar = S.createRebarCollection 20 2
 conc = M.newConc "35"
 
+-- co = S.createColumn 300 300 4500 "2.0" conc rebar
+
 co = S.createColumn 300 300 4500 "2.0" conc rebar
 
-runx = S.runSystem co (Just 100) (Just 45)
+runx = S.runSystem co 100 45
 
 
 

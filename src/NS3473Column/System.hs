@@ -5,13 +5,9 @@ module NS3473Column.System where
 
 -- import Data.Maybe (fromJust)
 
-import Control.Monad (mplus) 
-
-import Control.Monad.Writer (Writer,runWriter,tell,writer)
+import Control.Monad.Writer (Writer,runWriter,tell)
 
 import Text.Printf (printf)
-
-import Data.Monoid ((<>))
 
 import qualified NS3473.Concrete as M
 import qualified NS3473.Rebars as R
@@ -48,18 +44,12 @@ calcMf co nf mo = let e1 = X.e1 co nf mo
                     return (nf*(ae+e1+creep)/1000.0)
 
 runSystem :: C.Column 
-             -> Maybe Double  -- ^ Normal Force [kN]
-             -> Maybe Double  -- ^ Moment [kNm]
+             -> Double  -- ^ Normal Force [kN]
+             -> Double  -- ^ Moment [kNm]
              -> IO ()
-runSystem co nf mo = let Just nf' = mplus nf (Just 0.0)
-                         Just mo' = mplus mo (Just 0.0)
-                         factn = X.nf co nf'
-                         mf = runWriter (calcMf co nf' mo') --  >>= \mf ->
+runSystem co nf mo = let factn = X.nf co nf
+                         mf = runWriter (calcMf co nf mo) 
                          factm = X.factM co (fst mf) in
-                                             --return mf :: WriterSB) in
-                                             -- return (X.factM co mf) :: WriterSB) in
-                                             -- return (X.factM co mf) :: WriterSB >>= \factm ->
-                                             -- return (X.nf co nf') :: WriterSB >>= \factn -> 
                      putStrLn (snd mf) >>
                      putStrLn (printf "mf: %.6f" factm) >>
                      putStrLn (printf "nf: %.6f" factn) >>

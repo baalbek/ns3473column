@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DoAndIfThenElse #-}
 
 import Data.Map as Map
 import Text.Printf (printf)
@@ -12,6 +13,9 @@ import System.Console.CmdLib
 
 import qualified NS3473Column.System as S
 import qualified NS3473.Concrete as M
+import qualified NS3473.Buckling as X
+import qualified NS3473.Columns as C
+import NS3473.Common  (fsd)
 
 data Main = Main { 
         nf :: String,
@@ -21,7 +25,9 @@ data Main = Main {
         cln :: Int,
         lkf :: String,
         d :: Int,
-        n :: Int
+        n :: Int,
+        wt :: String,
+        x :: Bool
     }
     deriving (Typeable, Data, Eq)
 
@@ -34,25 +40,28 @@ instance Attributes Main where
             cln    %> [ Group "Geometry", Help "Column lenght (mm)", ArgHelp "VAL", Required False],
             lkf    %> [ Group "Geometry", Help "Effective length faktor (mm) (default: 1.0)", ArgHelp "VAL", Default "1.0" ],
             d      %> [ Group "Rebars", Help "Rebar diameter (mm) (default: 12)", ArgHelp "VAL", Required False, Default (12 :: Int) ],
-            n      %> [ Group "Rebars", Help "Amount of rebars one side of column (default: 2)", ArgHelp "VAL", Required False, Default (2 :: Int) ]
+            n      %> [ Group "Rebars", Help "Amount of rebars one side of column (default: 2)", ArgHelp "VAL", Required False, Default (2 :: Int) ],
+            wt     %> [ Group "Rebars", Help "Calculated rebar amount percentage from graph based on nf and m", ArgHelp "VAL", Required False ],
+            x      %> [ Group "Choice", Help "If set, will calculate rebar amount from wt", ArgHelp "VAL", Required False, Default False ]
         ]
 
 instance RecordCommand Main where
     mode_summary _ = "NS 3473 Columns"
 
-showOpt :: Main -> String
-showOpt main = "yep"
+asDouble :: String -> Double
+asDouble s | s == "0.0" = 0.0
+           | otherwise = (read s :: Double)
 
-nothingIfZero :: String -> Maybe Double
-nothingIfZero s | s == "0.0" = Nothing
-                | otherwise = Just (read s :: Double)
+calcAs :: C.Column -> String -> IO ()
+calcAs column wt = printf "As en side %.2f mm2\n" result
+    where wt' = (read wt) :: Double
+          result = (wt' * (X.ac column) * (X.fcd column) / fsd) 
 
 main :: IO ()
-main = getArgs >>= executeR Main {} >>= \opts -> do
-    let rebar = S.createRebarCollection (d opts) (n opts) 
-    let column = S.createColumn (h1 opts) (h2 opts) (cln opts) (lkf opts) (M.newConc "35") rebar 
-    let moment = nothingIfZero (m opts)
-    let normForce = nothingIfZero (nf opts)
-    S.runSystem column normForce moment 
-    return ()
-
+main = getArgs >>= executeR Main {} >>= \opts -> 
+        let rebar = S.createRebarCollection (d opts) (n opts) 
+            column = S.createColumn (h1 opts) (h2 opts) (cln opts) (lkf opts) (M.newConc "35") rebar in
+        if (x opts) == True 
+            then calcAs column (wt opts)
+            else S.runSystem column (asDouble (m opts)) (asDouble (nf opts)) >>
+        return ()
