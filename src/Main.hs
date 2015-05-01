@@ -52,16 +52,23 @@ asDouble :: String -> Double
 asDouble s | s == "0.0" = 0.0
            | otherwise = (read s :: Double)
 
-calcAs :: C.Column -> String -> IO ()
-calcAs column wt = printf "As en side %.2f mm2\n" result
-    where wt' = (read wt) :: Double
+calcAs :: C.Column 
+          -> Main 
+          -> IO ()
+calcAs column opts = printf "As en side: %.2f mm2\n" result
+    where wt' = (read (wt opts)) :: Double
           result = (wt' * (X.ac column) * (X.fcd column) / fsd) 
+
+runColumnSysem :: C.Column
+                  -> Main 
+                  -> IO ()
+runColumnSysem column opts =
+    S.runSystem column (asDouble (m opts)) (asDouble (nf opts)) 
 
 main :: IO ()
 main = getArgs >>= executeR Main {} >>= \opts -> 
         let rebar = S.createRebarCollection (d opts) (n opts) 
             column = S.createColumn (h1 opts) (h2 opts) (cln opts) (lkf opts) (M.newConc "35") rebar in
         case (x opts) of 
-            True -> calcAs column (wt opts) >> return ()
-            False -> S.runSystem column (asDouble (m opts)) (asDouble (nf opts)) >> return ()
-        >> return ()
+            True -> calcAs column opts 
+            False -> runColumnSysem column opts 
