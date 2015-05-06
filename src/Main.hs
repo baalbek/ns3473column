@@ -63,7 +63,7 @@ runColumnSysem :: C.Column
                   -> Main 
                   -> IO ()
 runColumnSysem column opts =
-    S.runSystem column (asDouble (m opts)) (asDouble (nf opts)) 
+    S.runSystem column (asDouble (nf opts)) (asDouble (m opts)) 
 
 main :: IO ()
 main = getArgs >>= executeR Main {} >>= \opts -> 
