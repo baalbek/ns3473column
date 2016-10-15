@@ -2,3 +2,7 @@
 src/NS3473
 c1 
 dist
+.cabal-sandbox/
+cabal.sandbox.config
+ns3473col-2.0
+
